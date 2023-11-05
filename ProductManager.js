@@ -1,82 +1,101 @@
+const fs = require ('fs')
+
 class ProductManager {
-    constructor (){
+    constructor() {
+        this.path = './productos.txt'
         this.products = []
     }
 
     static id = 0
 
-    addProduct(title,description,price,thumbnail,code,stock){
-        for(let i = 0; i < this.products.length; i++){
-            if(this.products[i].code === code){
-                console.log(`el codigo ${code} esta repetido`)
-                break
-            }
-        }
+    addProduct = async (title, description, price, image, code, stock) => {
 
-        const newProduct = {
+        // agregamos el static id a newproduct para que sea autoincrementable
+        ProductManager.id++
+
+        let newProduct = {
             title,
             description,
             price,
-            thumbnail,
+            image,
             code,
             stock,
+            //agrego la propiedad id con el productmanager.id++
+            id: ProductManager.id
         }
 
-        if (!Object.values(newProduct).includes(undefined)){
-            ProductManager.id++
-            this.products.push({
-                ...newProduct,
-                id:ProductManager.id,
-            })
-        } else {
-            console.log('todos los campos son requeridos')
+        this.products.push(newProduct)
+
+        // await fs.promises.writeFile(this.path, 'hola como estas')
+        //cambiamos el hola por new product para enviar el producto al archivo
+
+        //  await fs.promises.writeFile(this.path, newProduct)
+        // en este caso tenemos q modificarlo para que se pase en modo json o recibimos un error
+        await fs.promises.writeFile(this.path, JSON.stringify(this.products, null, "\t"))
+
+    }
+// armamos readproducts para poder reutilizarlo en getproductsbyid
+    readProducts = async () => {
+        let respuesta = await fs.promises.readFile(this.path, 'utf-8')
+        return JSON.parse(respuesta)
+    }
+
+    getProducts = async () => {
+        let respuesta2 = await this.readProducts()
+        return console.log(respuesta2)
+    }
+
+    getProductsById = async (id) => {
+        let respuesta3 = await this.readProducts()
+        if (!respuesta3.find(product => product.id === id)){
+            console.log('producto no encontrado');
+        }else{
+            console.log(respuesta3.find(product => product.id === id))
         }
-        
 
-
-       
     }
 
-    getProduct(){
-        return this.products
+    deleteProductsById = async (id) =>{
+        let respuesta4 = await this.readProducts()
+        let productFilter = respuesta4.filter(products => products.id != id)
+
+        await fs.promises.writeFile(this.path, JSON.stringify(productFilter))
+        console.log('producto eliminado')
+
     }
 
-    exists(id) {
-        return this.products.find((product) => product.id === id)
-    }
 
-    //ternario (transformo if en ternario para simplificar)
-    // si encontramos el producto que no coincide con el id = not found , si lo encontramos devuelve el producto
-    getProductById(id){
-       !this.exists(id) ? console.log('Not found') : console.log(this.exists(id))
+    updateProducts = async ({id, ...producto}) =>{
+        await this.deleteProductsById(id)
+        let productOld = await this.readProducts()
+
+        let productsModif = [
+            {id, ...producto},
+            ...productOld
+        ]
+        await fs.promises.writeFile(this.path, JSON.stringify(productsModif))
     }
 }
 
-const products = new ProductManager
-//primera llamada = arreglo vacio
-console.log(products.getProduct())
+const productos = new ProductManager
 
-// agregamos producto
-products.addProduct('titulo1','description1', 1000, 'thumbnail1', 'abc123', 5)
-products.addProduct('titulo2','description2', 1000, 'thumbnail2', 'abc124', 5)
+productos.addProduct('titulo1', 'description1', 1000, 'imagen1', 'abc121', 1)
+productos.addProduct('titulo2', 'description2', 2000, 'imagen2', 'abc122', 2)
+productos.addProduct('titulo3', 'description3', 3000, 'imagen3', 'abc123', 3)
 
-//segunda llamada = arreglo con producto
-console.log(products.getProduct())
+productos.getProducts()
 
+productos.getProductsById(2)
+productos.getProductsById(4)
 
-console.log('Busca producto 2')
-products.getProductById(2)
-console.log('Busca producto que no existe')
-products.getProductById(3)
-console.log('---------------------')
+productos.deleteProductsById(2)
 
-// comprobacion de code repetido
-console.log('busca codigo repetido')
-products.addProduct('titulo2','description2', 1000, 'thumbnail2', 'abc123', 5)
-products.addProduct('titulo3','description3', 1000, 'thumbnail3', 'abc124', 5)
-console.log('---------------------')
-
-// comprobacion de que todos los campos esten completos
-console.log('Busca campos incompletos')
-products.addProduct('titulo6','description6', 1000, 'thumbnail6', 'abc126', 6)
-products.addProduct('titulo2','description2', 1000, 'thumbnail2', 'abc125')
+productos.updateProducts({
+    title: 'titulo3',
+description: 'description3',
+price: 4000,
+image: 'imagen3',
+code: 'abc123',
+stock: 3,
+id: 3
+})
