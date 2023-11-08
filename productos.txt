@@ -16,8 +16,8 @@
 		"code": "abc122",
 		"stock": 2,
 		"id": 2
-	},
-	{
+	}
+]	{
 		"title": "titulo3",
 		"description": "description3",
 		"price": 3000,
